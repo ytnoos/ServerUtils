@@ -10,21 +10,12 @@ group = "net.frankheijden.serverutils"
 val dependencyDir = "${group}.dependencies"
 version = "3.5.5-SNAPSHOT"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-
 subprojects {
     apply(plugin = "java")
     apply(plugin = "maven-publish")
     apply(plugin = "checkstyle")
     apply(plugin = "com.github.johnrengelman.shadow")
 
-    java {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
 
     repositories {
         mavenCentral()
@@ -129,7 +120,6 @@ repositories {
 
 dependencies {
     implementation(project(":Common", "shadow"))
-    implementation(project(":Bukkit", "shadow"))
     implementation(project(":Bungee", "shadow"))
     implementation(project(":Velocity", "shadow"))
     implementation("net.kyori:adventure-text-serializer-gson:${VersionConstants.adventureVersion}") {

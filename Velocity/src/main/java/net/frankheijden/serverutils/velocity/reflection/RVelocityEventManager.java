@@ -65,8 +65,7 @@ public class RVelocityEventManager {
         Object registrationsEmptyArray = Array.newInstance(RHandlerRegistration.reflection.getClazz(), 0);
         Class<?> registrationsArrayClass = registrationsEmptyArray.getClass();
 
-        ExecutorService executor = reflection.invoke(manager, "getAsyncExecutor");
-        executor.execute(() -> reflection.invoke(
+        reflection.invoke(
                 manager,
                 "fire",
                 ClassObject.of(CompletableFuture.class, future),
@@ -74,7 +73,7 @@ public class RVelocityEventManager {
                 ClassObject.of(int.class, 0),
                 ClassObject.of(boolean.class, true),
                 ClassObject.of(registrationsArrayClass, registrations.toArray((Object[]) registrationsEmptyArray))
-        ));
+        );
 
         return future;
     }
