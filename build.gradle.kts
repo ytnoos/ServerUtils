@@ -30,6 +30,7 @@ subprojects {
         mavenCentral()
         maven("https://jitpack.io")
         maven("https://oss.sonatype.org/content/repositories/snapshots")
+        maven("https://repo.stellardrift.ca/repository/snapshots/")
         maven("https://papermc.io/repo/repository/maven-public/")
         maven("https://libraries.minecraft.net")
     }

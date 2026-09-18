@@ -9,7 +9,6 @@ import dev.frankheijden.minecraftreflection.MinecraftReflection;
 import java.lang.reflect.Array;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 public class RVelocityEventManager {
@@ -61,20 +60,30 @@ public class RVelocityEventManager {
     ) {
         List<Object> registrations = getRegistrationsByPlugins(manager, pluginInstances, event.getClass());
         CompletableFuture<E> future = new CompletableFuture<>();
+        if (registrations.isEmpty()) {
+            future.complete(event);
+            return future;
+        }
 
         Object registrationsEmptyArray = Array.newInstance(RHandlerRegistration.reflection.getClazz(), 0);
         Class<?> registrationsArrayClass = registrationsEmptyArray.getClass();
+        Object registrationsArray = registrations.toArray((Object[]) registrationsEmptyArray);
+        boolean alwaysAsync = RHandlerRegistration.isAlwaysAsync(registrations.get(0));
 
-        ExecutorService executor = reflection.invoke(manager, "getAsyncExecutor");
-        executor.execute(() -> reflection.invoke(
-                manager,
-                "fire",
-                ClassObject.of(CompletableFuture.class, future),
-                ClassObject.of(Object.class, event),
-                ClassObject.of(int.class, 0),
-                ClassObject.of(boolean.class, true),
-                ClassObject.of(registrationsArrayClass, registrations.toArray((Object[]) registrationsEmptyArray))
-        ));
+        Runnable fireEvent = () -> reflection.invoke(
+                    manager,
+                    "fire",
+                    ClassObject.of(CompletableFuture.class, future),
+                    ClassObject.of(Object.class, event),
+                    ClassObject.of(int.class, 0),
+                    ClassObject.of(boolean.class, alwaysAsync),
+                    ClassObject.of(registrationsArrayClass, registrationsArray)
+            );
+        if (alwaysAsync) {
+            RHandlerRegistration.getPlugin(registrations.get(0)).getExecutorService().execute(fireEvent);
+        } else {
+            fireEvent.run();
+        }
 
         return future;
     }
@@ -92,6 +101,11 @@ public class RVelocityEventManager {
 
         public static EventHandler<Object> getEventHandler(Object registration) {
             return reflection.get(registration, "handler");
+        }
+
+        public static boolean isAlwaysAsync(Object registration) {
+            Enum<?> asyncType = reflection.get(registration, "asyncType");
+            return asyncType.name().equals("ALWAYS");
         }
     }
 }

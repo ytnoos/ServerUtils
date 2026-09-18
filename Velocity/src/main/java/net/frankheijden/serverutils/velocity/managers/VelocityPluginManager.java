@@ -235,7 +235,7 @@ public class VelocityPluginManager extends AbstractPluginManager<PluginContainer
                 proxy.getEventManager(),
                 new ProxyShutdownEvent(),
                 pluginInstances
-        );
+        ).join();
 
         for (PluginContainer container : containers) {
             proxy.getEventManager().fire(new VelocityPluginDisableEvent(container, PluginEvent.Stage.POST));
@@ -269,8 +269,11 @@ public class VelocityPluginManager extends AbstractPluginManager<PluginContainer
                 proxy.getCommandManager().unregister(alias);
             }
 
-            RVelocityPluginManager.getPlugins(proxy.getPluginManager()).remove(pluginId);
-            RVelocityPluginManager.getPluginInstances(proxy.getPluginManager()).remove(pluginInstance);
+            RVelocityPluginManager.unregisterPlugin(
+                    proxy.getPluginManager(),
+                    container,
+                    pluginInstance
+            );
 
             List<Closeable> closeables = new ArrayList<>();
 
