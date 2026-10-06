@@ -92,6 +92,15 @@ public class VelocityPlugin extends ServerUtilsPlugin<PluginContainer, Scheduled
         return this.plugin.getDataDirectory().toFile();
     }
 
+    /**
+     * Disabled: ServerUtilsUpdater embeds an old ServerUtils copy that cannot unload plugins on current
+     * Velocity, and upstream releases would replace this fork. Update ServerUtils by restarting the proxy.
+     */
+    @Override
+    public boolean supportsSelfUpdate() {
+        return false;
+    }
+
     @Override
     protected void enablePlugin() {
         plugin.getProxy().getEventManager().register(plugin, new VelocityPlayerListener(this));

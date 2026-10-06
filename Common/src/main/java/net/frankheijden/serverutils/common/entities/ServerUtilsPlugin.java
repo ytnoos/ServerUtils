@@ -40,6 +40,14 @@ public abstract class ServerUtilsPlugin<P, T, C extends ServerUtilsAudience<S>, 
 
     public abstract Platform getPlatform();
 
+    /**
+     * Whether ServerUtils may check, download and install its own updates and restart itself through
+     * ServerUtilsUpdater. Platforms where that path is unsafe return {@code false}.
+     */
+    public boolean supportsSelfUpdate() {
+        return true;
+    }
+
     public abstract P getPlugin();
 
     public CommandsResource getCommandsResource() {

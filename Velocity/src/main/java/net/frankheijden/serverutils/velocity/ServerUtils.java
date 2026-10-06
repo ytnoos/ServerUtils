@@ -67,8 +67,8 @@ public class ServerUtils {
         RVelocityCommandManager.proxyRegistrars(
                 proxy,
                 getClass().getClassLoader(),
-                (container, meta) -> pluginCommandManager.getPluginCommands().putAll(
-                        container.getDescription().getId(),
+                (owners, meta) -> pluginCommandManager.recordRegistration(
+                        owners.stream().map(container -> container.getDescription().getId()).toList(),
                         meta.getAliases()
                 )
         );
@@ -91,6 +91,7 @@ public class ServerUtils {
      */
     @Subscribe
     public void onDisable(ProxyShutdownEvent event) {
+        RVelocityCommandManager.restoreRegistrars(proxy);
         try {
             pluginCommandManager.save();
         } catch (IOException ex) {

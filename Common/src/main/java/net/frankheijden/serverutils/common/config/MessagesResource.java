@@ -7,7 +7,8 @@ import net.frankheijden.serverutils.common.entities.ServerUtilsAudience;
 import net.frankheijden.serverutils.common.entities.ServerUtilsPlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 public class MessagesResource extends ServerUtilsResource {
 
@@ -22,7 +23,7 @@ public class MessagesResource extends ServerUtilsResource {
     public MessagesResource(ServerUtilsPlugin<?, ?, ?, ?, ?> plugin) {
         super(plugin, MESSAGES_RESOURCE);
         this.messageMap = new HashMap<>();
-        this.miniMessage = MiniMessage.get();
+        this.miniMessage = MiniMessage.miniMessage();
     }
 
     public Message get(String path) {
@@ -54,31 +55,40 @@ public class MessagesResource extends ServerUtilsResource {
         public Message(PlaceholderConfigKey key) {
             this.key = key;
             this.messageString = getConfig().getString("messages." + key.getPath());
-            this.component = key.hasPlaceholders() ? null : miniMessage.parse(messageString);
+            this.component = key.hasPlaceholders() ? null : miniMessage.deserialize(messageString);
         }
 
         /**
          * Creates a {@link Component}.
          */
         public Component toComponent() {
-            return this.component == null ? miniMessage.parse(messageString) : this.component;
+            return this.component == null ? miniMessage.deserialize(messageString) : this.component;
         }
 
         /**
          * Creates a {@link Component}.
          */
-        public Component toComponent(Template... templates) {
-            return this.component == null ? miniMessage.parse(messageString, templates) : this.component;
+        public Component toComponent(TagResolver... resolvers) {
+            return this.component == null
+                    ? miniMessage.deserialize(messageString, TagResolver.resolver(resolvers))
+                    : this.component;
         }
 
         /**
-         * Creates a {@link Component}.
+         * Creates a {@link Component} from {@code key, value, key, value, ...} placeholder pairs.
          */
         public Component toComponent(String... placeholders) {
-            return this.component == null ? miniMessage.parse(messageString, placeholders) : this.component;
+            if (placeholders.length % 2 != 0) {
+                throw new IllegalArgumentException("Placeholders must be key/value pairs");
+            }
+            TagResolver[] resolvers = new TagResolver[placeholders.length / 2];
+            for (int i = 0; i < resolvers.length; i++) {
+                resolvers[i] = Placeholder.unparsed(placeholders[2 * i], placeholders[2 * i + 1]);
+            }
+            return toComponent(resolvers);
         }
 
-        public void sendTo(ServerUtilsAudience<?> serverAudience, Template... placeholders) {
+        public void sendTo(ServerUtilsAudience<?> serverAudience, TagResolver... placeholders) {
             serverAudience.sendMessage(toComponent(placeholders));
         }
     }

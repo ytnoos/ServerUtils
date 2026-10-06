@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.frankheijden.serverutils.common.entities.exceptions.InvalidPluginDescriptionException;
@@ -265,7 +266,11 @@ public class VelocityPluginManager extends AbstractPluginManager<PluginContainer
                 task.cancel();
             }
 
-            for (String alias : pluginCommandManager.getPluginCommands().removeAll(pluginId)) {
+            Set<String> aliases = new LinkedHashSet<>(pluginCommandManager.takeCommands(pluginId));
+            Set<String> ownedAliases = RVelocityCommandManager.findOwnedAliases(proxy, container, pluginInstance);
+            pluginCommandManager.forget(ownedAliases);
+            aliases.addAll(ownedAliases);
+            for (String alias : aliases) {
                 proxy.getCommandManager().unregister(alias);
             }
 
@@ -274,6 +279,7 @@ public class VelocityPluginManager extends AbstractPluginManager<PluginContainer
                     container,
                     pluginInstance
             );
+            RVelocityPluginContainer.shutdownExecutor(container);
 
             List<Closeable> closeables = new ArrayList<>();
 

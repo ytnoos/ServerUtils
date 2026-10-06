@@ -13,6 +13,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class VelocityPluginCommandManager {
 
@@ -56,6 +58,39 @@ public class VelocityPluginCommandManager {
 
     public Multimap<String, String> getPluginCommands() {
         return pluginCommands;
+    }
+
+    /**
+     * Records the latest registration of {@code aliases}: earlier owners of those aliases are forgotten, so
+     * unloading a plugin never removes a command another plugin registered again afterwards.
+     */
+    public void recordRegistration(Collection<String> pluginIds, Collection<String> aliases) {
+        synchronized (pluginCommands) {
+            pluginCommands.entries().removeIf(entry -> aliases.contains(entry.getValue()));
+            for (String pluginId : pluginIds) {
+                pluginCommands.putAll(pluginId, aliases);
+            }
+        }
+    }
+
+    /**
+     * Removes and returns the aliases owned by {@code pluginId}, dropping them for co-owners as well.
+     */
+    public Set<String> takeCommands(String pluginId) {
+        synchronized (pluginCommands) {
+            Set<String> aliases = new LinkedHashSet<>(pluginCommands.removeAll(pluginId));
+            forget(aliases);
+            return aliases;
+        }
+    }
+
+    /**
+     * Drops {@code aliases} for every plugin.
+     */
+    public void forget(Collection<String> aliases) {
+        synchronized (pluginCommands) {
+            pluginCommands.entries().removeIf(entry -> aliases.contains(entry.getValue()));
+        }
     }
 
     /**

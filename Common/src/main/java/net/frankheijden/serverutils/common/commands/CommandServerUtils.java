@@ -32,7 +32,8 @@ import net.frankheijden.serverutils.common.utils.ListComponentBuilder;
 import net.frankheijden.serverutils.common.utils.KeyValueComponentBuilder;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?, ?>, P, C extends ServerUtilsAudience<?>>
         extends ServerUtilsCommand<U, C> {
@@ -113,8 +114,8 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
 
             if (commandElement.shouldDisplayInHelp()) {
                 sender.sendMessage(helpFormatMessage.toComponent(
-                        Template.of("command", shortestCommandAlias),
-                        Template.of("help", commandElement.getDescription().getDescription())
+                        Placeholder.unparsed("command", shortestCommandAlias),
+                        Placeholder.unparsed("help", commandElement.getDescription().getDescription())
                 ));
             }
 
@@ -128,8 +129,8 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                     if (subcommandElement.shouldDisplayInHelp()) {
                         String shortestSubcommandAlias = determineShortestAlias(subcommandElement);
                         sender.sendMessage(helpFormatMessage.toComponent(
-                                Template.of("command", shortestCommandAlias + ' ' + shortestSubcommandAlias),
-                                Template.of("help", subcommandElement.getDescription().getDescription())
+                                Placeholder.unparsed("command", shortestCommandAlias + ' ' + shortestSubcommandAlias),
+                                Placeholder.unparsed("help", subcommandElement.getDescription().getDescription())
                         ));
                     }
                 }
@@ -146,8 +147,8 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                         String shortestFlagAlias = determineShortestAlias(flagElement);
                         String flagPrefix = "-" + (flagElement.getMain().equals(shortestFlagAlias) ? "_" : "");
                         sender.sendMessage(helpFormatMessage.toComponent(
-                                Template.of("command", shortestCommandAlias + ' ' + flagPrefix + shortestFlagAlias),
-                                Template.of("help", flagElement.getDescription().getDescription())
+                                Placeholder.unparsed("command", shortestCommandAlias + ' ' + flagPrefix + shortestFlagAlias),
+                                Placeholder.unparsed("help", flagElement.getDescription().getDescription())
                         ));
                     }
                 }
@@ -175,6 +176,13 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
 
     private void handleRestart(CommandContext<C> context) {
         C sender = context.getSender();
+        if (!plugin.supportsSelfUpdate()) {
+            sender.sendMessage(Component.text(
+                    "ServerUtils cannot restart itself on this platform: restart the server to update it.",
+                    NamedTextColor.RED
+            ));
+            return;
+        }
 
         if (checkDependingPlugins(context, sender, Collections.singletonList(plugin.getPlugin()), "restart")) {
             return;
@@ -258,11 +266,11 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
             if (!dependingPlugins.isEmpty()) {
                 TextComponent.Builder builder = Component.text();
                 builder.append(messages.get(MessageKey.DEPENDING_PLUGINS_PREFIX).toComponent(
-                        Template.of("plugin", pluginId)
+                        Placeholder.unparsed("plugin", pluginId)
                 ));
                 builder.append(ListComponentBuilder.create(dependingPlugins)
                         .format(p -> messages.get(MessageKey.DEPENDING_PLUGINS_FORMAT).toComponent(
-                                Template.of("plugin", pluginManager.getPluginId(p))
+                                Placeholder.unparsed("plugin", pluginManager.getPluginId(p))
                         ))
                         .separator(messages.get(MessageKey.DEPENDING_PLUGINS_SEPARATOR).toComponent())
                         .lastSeparator(messages.get(MessageKey.DEPENDING_PLUGINS_LAST_SEPARATOR).toComponent())
@@ -279,7 +287,7 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                     .orElse("-f");
 
             sender.sendMessage(messages.get(MessageKey.DEPENDING_PLUGINS_OVERRIDE).toComponent(
-                    Template.of("command", context.getRawInputJoined() + " " + forceFlag)
+                    Placeholder.unparsed("command", context.getRawInputJoined() + " " + forceFlag)
             ));
         }
 
@@ -293,7 +301,7 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                         .min(Comparator.comparingInt(String::length))
                         .orElse("restart");
                 Component component = plugin.getMessagesResource().get(MessageKey.RELOADPLUGIN_SERVERUTILS).toComponent(
-                        Template.of("command", context.getRawInput().peekFirst() + " " + restartCommand)
+                        Placeholder.unparsed("command", context.getRawInput().peekFirst() + " " + restartCommand)
                 );
                 sender.sendMessage(component);
                 return true;
@@ -311,7 +319,7 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
             String pluginId = pluginManager.getPluginId(plugin);
             if (protectedPlugins.contains(pluginId)) {
                 sender.sendMessage(messagesResource.get(MessageKey.GENERIC_PROTECTED_PLUGIN).toComponent(
-                        Template.of("plugin", pluginId)
+                        Placeholder.unparsed("plugin", pluginId)
                 ));
                 return true;
             }
@@ -388,7 +396,7 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                 KeyValueComponentBuilder.create(formatMessage, "key", "value"),
                 listBuilderConsumer -> {
                     ListComponentBuilder<String> listBuilder = ListComponentBuilder.<String>create()
-                            .format(str -> listFormatMessage.toComponent(Template.of("value", str)))
+                            .format(str -> listFormatMessage.toComponent(Placeholder.unparsed("value", str)))
                             .separator(separator)
                             .lastSeparator(lastSeparator)
                             .emptyValue(null);

@@ -25,7 +25,7 @@ import net.frankheijden.serverutils.common.utils.GitHubUtils;
 import net.frankheijden.serverutils.common.utils.VersionUtils;
 import net.frankheijden.serverutilsupdater.common.Updater;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.Template;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 
 public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> implements Runnable {
 
@@ -66,6 +66,7 @@ public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> im
             ServerUtilsAudience<?> sender,
             String action
     ) {
+        if (!plugin.supportsSelfUpdate()) return;
         ServerUtilsConfig config = ServerUtilsApp.getPlugin().getConfigResource().getConfig();
         if (config.getBoolean("settings.check-updates-" + action)) {
             start(plugin, sender, action);
@@ -136,9 +137,9 @@ public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> im
         if (!download || pluginAsset == null) {
             if (sender.isPlayer()) {
                 Component component = plugin.getMessagesResource().get(MessageKey.UPDATE_AVAILABLE).toComponent(
-                        Template.of("old", ServerUtilsApp.VERSION),
-                        Template.of("new", githubVersion),
-                        Template.of("info", body)
+                        Placeholder.unparsed("old", ServerUtilsApp.VERSION),
+                        Placeholder.unparsed("new", githubVersion),
+                        Placeholder.unparsed("info", body)
                 );
                 sender.sendMessage(component);
             }
@@ -148,9 +149,9 @@ public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> im
         plugin.getLogger().log(Level.INFO, DOWNLOAD_START, pluginAsset.getDownloadUrl());
         if (sender.isPlayer()) {
             Component component = plugin.getMessagesResource().get(MessageKey.UPDATE_DOWNLOADING).toComponent(
-                    Template.of("old", ServerUtilsApp.VERSION),
-                    Template.of("new", githubVersion),
-                    Template.of("info", body)
+                    Placeholder.unparsed("old", ServerUtilsApp.VERSION),
+                    Placeholder.unparsed("new", githubVersion),
+                    Placeholder.unparsed("info", body)
             );
             sender.sendMessage(component);
         }
@@ -286,7 +287,7 @@ public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> im
 
     private void broadcastDownloadStatus(String githubVersion, boolean isError) {
         ConfigKey key = isError ? MessageKey.UPDATE_DOWNLOAD_FAILED : MessageKey.UPDATE_DOWNLOAD_SUCCESS;
-        Component component = plugin.getMessagesResource().get(key).toComponent(Template.of("new", githubVersion));
+        Component component = plugin.getMessagesResource().get(key).toComponent(Placeholder.unparsed("new", githubVersion));
         plugin.getChatProvider().broadcast(component, "serverutils.notification.update");
     }
 }

@@ -91,8 +91,8 @@ subprojects {
         if (project.name != "Velocity") {
             relocate("net.kyori.adventure", "${dependencyDir}.adventure")
             relocate("net.kyori.examination", "${dependencyDir}.examination")
+            relocate("net.kyori.adventure.text.minimessage", "${dependencyDir}.adventure.text.minimessage")
         }
-        relocate("net.kyori.adventure.text.minimessage", "${dependencyDir}.adventure.text.minimessage")
         relocate("dev.frankheijden.minecraftreflection", "${dependencyDir}.minecraftreflection")
     }
 
