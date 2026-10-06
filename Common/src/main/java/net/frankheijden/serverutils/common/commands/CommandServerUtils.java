@@ -147,7 +147,10 @@ public abstract class CommandServerUtils<U extends ServerUtilsPlugin<P, ?, C, ?,
                         String shortestFlagAlias = determineShortestAlias(flagElement);
                         String flagPrefix = "-" + (flagElement.getMain().equals(shortestFlagAlias) ? "_" : "");
                         sender.sendMessage(helpFormatMessage.toComponent(
-                                Placeholder.unparsed("command", shortestCommandAlias + ' ' + flagPrefix + shortestFlagAlias),
+                                Placeholder.unparsed(
+                                        "command",
+                                        shortestCommandAlias + ' ' + flagPrefix + shortestFlagAlias
+                                ),
                                 Placeholder.unparsed("help", flagElement.getDescription().getDescription())
                         ));
                     }

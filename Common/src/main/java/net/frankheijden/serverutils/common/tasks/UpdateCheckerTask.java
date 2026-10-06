@@ -287,7 +287,8 @@ public class UpdateCheckerTask<U extends ServerUtilsPlugin<P, ?, ?, ?, ?>, P> im
 
     private void broadcastDownloadStatus(String githubVersion, boolean isError) {
         ConfigKey key = isError ? MessageKey.UPDATE_DOWNLOAD_FAILED : MessageKey.UPDATE_DOWNLOAD_SUCCESS;
-        Component component = plugin.getMessagesResource().get(key).toComponent(Placeholder.unparsed("new", githubVersion));
+        Component component = plugin.getMessagesResource().get(key)
+                .toComponent(Placeholder.unparsed("new", githubVersion));
         plugin.getChatProvider().broadcast(component, "serverutils.notification.update");
     }
 }
