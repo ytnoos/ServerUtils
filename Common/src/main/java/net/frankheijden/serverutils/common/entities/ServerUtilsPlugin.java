@@ -1,6 +1,7 @@
 package net.frankheijden.serverutils.common.entities;
 
 import cloud.commandframework.Command;
+import cloud.commandframework.exceptions.CommandExecutionException;
 import cloud.commandframework.CommandManager;
 import cloud.commandframework.brigadier.CloudBrigadierManager;
 import java.io.File;
@@ -12,7 +13,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.frankheijden.serverutils.common.ServerUtilsApp;
 import net.frankheijden.serverutils.common.commands.brigadier.BrigadierHandler;
 import net.frankheijden.serverutils.common.config.CommandsResource;
@@ -191,6 +195,14 @@ public abstract class ServerUtilsPlugin<P, T, C extends ServerUtilsAudience<S>, 
         this.messagesResource = new MessagesResource(this);
         this.messagesResource.load(Arrays.asList(MessageKey.values()));
         this.commandManager = newCommandManager();
+        // An exception inside a subcommand ran on the async coordinator and vanished: the sender saw
+        // nothing (a half done reload looked like a success). Log it and tell the sender.
+        this.commandManager.registerExceptionHandler(CommandExecutionException.class, (sender, ex) -> {
+            Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+            getLogger().log(Level.SEVERE, "ServerUtils command failed", cause);
+            sender.sendMessage(Component.text("ServerUtils: the command failed (" + cause + "). See the console.",
+                    NamedTextColor.RED));
+        });
         reloadPlugin();
     }
 

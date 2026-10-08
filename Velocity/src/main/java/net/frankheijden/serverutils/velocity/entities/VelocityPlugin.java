@@ -6,6 +6,8 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.scheduler.ScheduledTask;
 import java.io.File;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 import net.frankheijden.serverutils.common.entities.ServerUtilsPlugin;
 import net.frankheijden.serverutils.velocity.ServerUtils;
@@ -16,6 +18,12 @@ import net.frankheijden.serverutils.velocity.managers.VelocityPluginManager;
 import net.frankheijden.serverutils.velocity.managers.VelocityTaskManager;
 
 public class VelocityPlugin extends ServerUtilsPlugin<PluginContainer, ScheduledTask, VelocityAudience, CommandSource, VelocityPluginDescription> {
+
+    private static final Executor COMMAND_EXECUTOR = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "ServerUtils Command");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     private final ServerUtils plugin;
     private final VelocityPluginManager pluginManager;
@@ -39,12 +47,18 @@ public class VelocityPlugin extends ServerUtilsPlugin<PluginContainer, Scheduled
         this.chatProvider = new VelocityAudienceProvider(plugin);
     }
 
+    /**
+     * Commands run off the proxy thread but one at a time: two plugin loads or unloads at once raced
+     * in the shared reflection cache (ConcurrentModificationException) and one of them hung.
+     */
     @Override
     protected VelocityCommandManager<VelocityAudience> newCommandManager() {
         VelocityCommandManager<VelocityAudience> commandManager = new VelocityCommandManager<>(
                 plugin.getPluginContainer(),
                 plugin.getProxy(),
-                AsynchronousCommandExecutionCoordinator.<VelocityAudience>newBuilder().build(),
+                AsynchronousCommandExecutionCoordinator.<VelocityAudience>newBuilder()
+                        .withExecutor(COMMAND_EXECUTOR)
+                        .build(),
                 chatProvider::get,
                 VelocityAudience::getSource
         );

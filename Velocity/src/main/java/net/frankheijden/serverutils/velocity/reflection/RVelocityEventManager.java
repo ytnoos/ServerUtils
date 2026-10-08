@@ -70,15 +70,23 @@ public class RVelocityEventManager {
         Object registrationsArray = registrations.toArray((Object[]) registrationsEmptyArray);
         boolean alwaysAsync = RHandlerRegistration.isAlwaysAsync(registrations.get(0));
 
-        Runnable fireEvent = () -> reflection.invoke(
-                    manager,
-                    "fire",
-                    ClassObject.of(CompletableFuture.class, future),
-                    ClassObject.of(Object.class, event),
-                    ClassObject.of(int.class, 0),
-                    ClassObject.of(boolean.class, alwaysAsync),
-                    ClassObject.of(registrationsArrayClass, registrationsArray)
-            );
+        // A failure on the plugin's executor must fail the future: callers join() it, and an
+        // uncompleted future left the command hanging forever with no message.
+        Runnable fireEvent = () -> {
+            try {
+                reflection.invoke(
+                        manager,
+                        "fire",
+                        ClassObject.of(CompletableFuture.class, future),
+                        ClassObject.of(Object.class, event),
+                        ClassObject.of(int.class, 0),
+                        ClassObject.of(boolean.class, alwaysAsync),
+                        ClassObject.of(registrationsArrayClass, registrationsArray)
+                );
+            } catch (Throwable ex) {
+                future.completeExceptionally(ex);
+            }
+        };
         if (alwaysAsync) {
             RHandlerRegistration.getPlugin(registrations.get(0)).getExecutorService().execute(fireEvent);
         } else {

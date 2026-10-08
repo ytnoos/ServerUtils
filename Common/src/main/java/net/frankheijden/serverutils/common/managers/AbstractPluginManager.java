@@ -182,9 +182,23 @@ public abstract class AbstractPluginManager<P, D extends ServerUtilsPluginDescri
     }
 
     /**
-     * Reloads the given plugins.
+     * Reloads the given plugins. The jar of each plugin is resolved before anything is disabled: a
+     * reload that cannot find it fails with the plugins still running, never half way.
      */
     public PluginResults<P> reloadPlugins(List<P> plugins) {
+        List<String> pluginIds = new ArrayList<>(plugins.size());
+        List<File> pluginFiles = new ArrayList<>(plugins.size());
+        for (P plugin : plugins) {
+            String pluginId = getPluginId(plugin);
+            File loadedFile = getPluginFile(plugin);
+            Optional<File> pluginFile = loadedFile != null && loadedFile.isFile()
+                    ? Optional.of(loadedFile)
+                    : getPluginFile(pluginId);
+            if (!pluginFile.isPresent()) return new PluginResults<P>().addResult(pluginId, Result.FILE_DELETED);
+            pluginIds.add(pluginId);
+            pluginFiles.add(pluginFile.get());
+        }
+
         PluginResults<P> disableResults = disablePlugins(plugins);
         for (PluginResult<P> disableResult : disableResults.getResults()) {
             if (!disableResult.isSuccess() && disableResult.getResult() != Result.ALREADY_DISABLED) {
@@ -192,21 +206,9 @@ public abstract class AbstractPluginManager<P, D extends ServerUtilsPluginDescri
             }
         }
 
-        List<String> pluginIds = new ArrayList<>(plugins.size());
-        for (P plugin : plugins) {
-            pluginIds.add(getPluginId(plugin));
-        }
-
         CloseablePluginResults<P> unloadResults = unloadPlugins(plugins);
         if (!unloadResults.isSuccess()) return unloadResults;
         unloadResults.tryClose();
-
-        List<File> pluginFiles = new ArrayList<>(plugins.size());
-        for (String pluginId : pluginIds) {
-            Optional<File> pluginFile = getPluginFile(pluginId);
-            if (!pluginFile.isPresent()) return new PluginResults<P>().addResult(pluginId, Result.FILE_DELETED);
-            pluginFiles.add(pluginFile.get());
-        }
 
         PluginResults<P> loadResults = loadPlugins(pluginFiles);
         if (!loadResults.isSuccess()) return loadResults;

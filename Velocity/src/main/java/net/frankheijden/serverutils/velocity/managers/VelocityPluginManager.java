@@ -312,12 +312,21 @@ public class VelocityPluginManager extends AbstractPluginManager<PluginContainer
                 .orElse(null);
     }
 
+    /**
+     * The jar in the plugins folder that declares {@code pluginName}. Jars without a readable
+     * velocity-plugin.json (e.g. a proxy jar kept there) are skipped, not fatal.
+     */
     @Override
     public Optional<File> getPluginFile(String pluginName) {
         Object javaPluginLoader = RJavaPluginLoader.newInstance(instance.proxy, getPluginsFolder().toPath());
 
         for (File file : getPluginJars()) {
-            PluginDescription desc = RJavaPluginLoader.loadPluginDescription(javaPluginLoader, file.toPath());
+            PluginDescription desc;
+            try {
+                desc = RJavaPluginLoader.loadPluginDescription(javaPluginLoader, file.toPath());
+            } catch (RuntimeException ex) {
+                continue;
+            }
 
             if (desc.getId().equals(pluginName)) {
                 return Optional.of(file);
